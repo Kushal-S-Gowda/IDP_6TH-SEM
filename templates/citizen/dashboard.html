@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodSense Pro — Citizen Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #0a1628; color: white; font-family: Arial, sans-serif; }
+        .navbar { background: #0d2137; border-bottom: 2px solid #1565c0; }
+        .search-box { background: #0d2137; border: 2px solid #1565c0; border-radius: 50px; padding: 20px 30px; margin: 30px auto; max-width: 600px; }
+        .search-box input { background: transparent; border: none; color: white; font-size: 1.1rem; outline: none; width: 75%; }
+        .search-box input::placeholder { color: #64b5f6; }
+        .search-box button { background: #1565c0; border: none; border-radius: 30px; padding: 8px 25px; color: white; }
+        .risk-badge { border-radius: 20px; padding: 15px 35px; font-size: 2rem; font-weight: 900; display: inline-block; margin: 10px 0; }
+        .risk-LOW     { background: #28a745; }
+        .risk-MEDIUM  { background: #ffc107; color: #000; }
+        .risk-HIGH    { background: #fd7e14; }
+        .risk-EXTREME { background: #dc3545; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+        .card-dark { background: #0d2137; border: 1px solid #1565c0; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .weather-stat { text-align: center; padding: 15px; }
+        .weather-stat h3 { color: #4fc3f7; font-size: 1.8rem; font-weight: 900; margin: 0; }
+        .weather-stat p  { color: #90caf9; margin: 0; font-size: 0.85rem; }
+        .evacuation-card { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #dc3545; border-radius: 15px; padding: 25px; }
+        .safe-zone-badge { background: #28a745; border-radius: 10px; padding: 10px 15px; display: inline-block; margin: 5px; }
+        .instruction-item { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 15px; margin: 5px 0; border-left: 3px solid #4fc3f7; }
+        .contact-btn { background: #dc3545; border: none; border-radius: 8px; padding: 8px 15px; color: white; margin: 3px; font-size: 0.85rem; }
+        .loading { display: none; text-align: center; padding: 40px; }
+        .spinner { border: 4px solid #1565c0; border-top: 4px solid #4fc3f7; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #results { display: none; }
+        .prob-bar { height: 8px; border-radius: 4px; margin: 3px 0; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar px-4 py-3 d-flex justify-content-between align-items-center">
+    <a href="/" class="text-decoration-none">
+        <span style="color:#4fc3f7; font-size:1.3rem; font-weight:900;">🌊 FloodSense Pro</span>
+    </a>
+    <span style="color:#90caf9; font-size:0.85rem;">Citizen Dashboard</span>
+    <a href="/authority" class="btn btn-sm btn-outline-danger">Authority View</a>
+</nav>
+
+<div class="container py-4">
+
+    <!-- Search -->
+    <div class="text-center mb-4">
+        <h2 style="color:#4fc3f7;">Check Flood Risk For Your Location</h2>
+        <p style="color:#90caf9;">Enter any Indian city to get real-time flood risk assessment</p>
+    </div>
+
+    <div class="search-box d-flex align-items-center">
+        <span style="font-size:1.3rem; margin-right:10px;">📍</span>
+        <input type="text" id="cityInput" placeholder="Enter city name (e.g. Bengaluru, Chennai, Mumbai)" value="Bengaluru">
+        <button onclick="checkRisk()">Check Risk</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p style="color:#4fc3f7;">Fetching live weather data & running AI prediction...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+
+        <!-- Risk Level Banner -->
+        <div class="card-dark text-center" id="riskBanner">
+            <h4 style="color:#90caf9;" id="cityName">—</h4>
+            <div class="risk-badge" id="riskBadge">—</div>
+            <p style="color:#ccc; margin:5px 0;" id="riskAction">—</p>
+            <small style="color:#64b5f6;" id="riskScore">—</small>
+        </div>
+
+        <!-- Weather Stats -->
+        <div class="card-dark">
+            <h5 style="color:#4fc3f7;" class="mb-3">🌤️ Current Weather Conditions</h5>
+            <div class="row">
+                <div class="col-3 weather-stat">
+                    <h3 id="wTemp">—</h3><p>Temperature</p>
+                </div>
+                <div class="col-3 weather-stat">
+                    <h3 id="wHumidity">—</h3><p>Humidity</p>
+                </div>
+                <div class="col-3 weather-stat">
+                    <h3 id="wRainfall">—</h3><p>Rainfall/hr</p>
+                </div>
+                <div class="col-3 weather-stat">
+                    <h3 id="wWind">—</h3><p>Wind Speed</p>
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <small style="color:#64b5f6;" id="wDesc">—</small>
+            </div>
+        </div>
+
+        <!-- Risk Probabilities -->
+        <div class="card-dark">
+            <h5 style="color:#4fc3f7;" class="mb-3">📊 Risk Level Probabilities</h5>
+            <div id="probBars"></div>
+        </div>
+
+        <!-- 48hr Forecast Chart -->
+        <div class="card-dark">
+            <h5 style="color:#4fc3f7;" class="mb-3">🌧️ 48-Hour Rainfall Forecast</h5>
+            <canvas id="forecastChart" height="100"></canvas>
+        </div>
+
+        <!-- Evacuation Panel (shown only for HIGH/EXTREME) -->
+        <div id="evacuationPanel" style="display:none;">
+            <div class="evacuation-card">
+                <h4 style="color:#dc3545;">🚨 EVACUATION GUIDANCE</h4>
+                <p style="color:#ffcdd2;" id="evacuationIntro">—</p>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6 style="color:#4fc3f7;">🏔️ Primary Safe Zone</h6>
+                        <div class="safe-zone-badge">
+                            <strong id="safeZoneName">—</strong><br>
+                            <small id="safeZoneDetails">—</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 style="color:#4fc3f7;">🗺️ Alternate Safe Zones</h6>
+                        <div id="alternateSafeZones"></div>
+                    </div>
+                </div>
+
+                <h6 style="color:#4fc3f7;" class="mt-3">📋 Instructions</h6>
+                <div id="instructions"></div>
+
+                <h6 style="color:#4fc3f7;" class="mt-3">🆘 Emergency Contacts</h6>
+                <div id="emergencyContacts"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let forecastChartInstance = null;
+
+async function checkRisk() {
+    const city = document.getElementById("cityInput").value.trim();
+    if (!city) return;
+
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("results").style.display = "none";
+
+    try {
+        const response = await fetch(`/api/citizen/risk?city=${encodeURIComponent(city)}`);
+        const data = await response.json();
+
+        if (data.status === "error") {
+            alert("Error: " + data.message);
+            document.getElementById("loading").style.display = "none";
+            return;
+        }
+
+        renderResults(data);
+
+    } catch (err) {
+        alert("Connection error. Please try again.");
+    }
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("results").style.display = "block";
+}
+
+function renderResults(data) {
+    const p = data.prediction;
+    const w = data.weather;
+
+    // Risk Banner
+    document.getElementById("cityName").textContent = `📍 ${data.city}`;
+    const badge = document.getElementById("riskBadge");
+    badge.textContent = p.risk_label + " RISK";
+    badge.className = `risk-badge risk-${p.risk_label}`;
+    document.getElementById("riskAction").textContent = p.action;
+    document.getElementById("riskScore").textContent = `AI Confidence: ${p.risk_score}%`;
+
+    // Weather
+    document.getElementById("wTemp").textContent     = `${w.temperature}°C`;
+    document.getElementById("wHumidity").textContent = `${w.humidity}%`;
+    document.getElementById("wRainfall").textContent = `${w.rainfall_1h}mm`;
+    document.getElementById("wWind").textContent     = `${w.wind_speed}km/h`;
+    document.getElementById("wDesc").textContent     = `Condition: ${w.weather_desc}`;
+
+    // Probability bars
+    const colors = {LOW:"#28a745", MEDIUM:"#ffc107", HIGH:"#fd7e14", EXTREME:"#dc3545"};
+    let probHtml = "";
+    for (const [label, pct] of Object.entries(p.probabilities)) {
+        probHtml += `
+            <div class="d-flex align-items-center mb-2">
+                <span style="width:80px; color:#ccc; font-size:0.85rem;">${label}</span>
+                <div style="flex:1; background:#1a2d45; border-radius:4px; height:20px;">
+                    <div style="width:${pct}%; background:${colors[label]}; height:100%; border-radius:4px; transition:width 0.5s;"></div>
+                </div>
+                <span style="width:50px; text-align:right; color:#90caf9; font-size:0.85rem;">${pct}%</span>
+            </div>`;
+    }
+    document.getElementById("probBars").innerHTML = probHtml;
+
+    // Forecast chart
+    const fc = data.forecast_chart;
+    if (forecastChartInstance) forecastChartInstance.destroy();
+    const ctx = document.getElementById("forecastChart").getContext("2d");
+    forecastChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: fc.labels,
+            datasets: [{
+                label: "Rainfall (mm)",
+                data: fc.rainfall,
+                backgroundColor: fc.risk_levels.map(c =>
+                    c==="red"?"rgba(220,53,69,0.8)":
+                    c==="orange"?"rgba(253,126,20,0.8)":
+                    c==="yellow"?"rgba(255,193,7,0.8)":"rgba(40,167,69,0.8)"
+                ),
+                borderRadius: 5,
+            }]
+        },
+        options: {
+            plugins: { legend: { labels: { color: "#90caf9" } } },
+            scales: {
+                x: { ticks: { color: "#64b5f6", maxRotation: 45 }, grid: { color: "#1a2d45" } },
+                y: { ticks: { color: "#64b5f6" }, grid: { color: "#1a2d45" }, title: { display: true, text: "Rainfall (mm)", color: "#90caf9" } }
+            }
+        }
+    });
+
+    // Evacuation panel
+    if (p.risk_class >= 2 && data.evacuation_plan) {
+        const ep = data.evacuation_plan;
+        const pz = ep.primary_safe_zone;
+        document.getElementById("evacuationPanel").style.display = "block";
+        document.getElementById("evacuationIntro").textContent =
+            `⚠️ Your area is at ${p.risk_label} risk. Evacuate now to the nearest safe zone.`;
+        document.getElementById("safeZoneName").textContent = pz.name;
+        document.getElementById("safeZoneDetails").textContent =
+            `${pz.road_distance_km} km | ${pz.road_duration_min} min | ${pz.elevation}m elevation`;
+
+        // Alternates
+        let altHtml = "";
+        for (const z of (ep.alternate_safe_zones || [])) {
+            altHtml += `<div style="color:#a5d6a7; font-size:0.85rem; margin:3px 0;">
+                🏔️ ${z.name} — ${z.straight_distance_km} km</div>`;
+        }
+        document.getElementById("alternateSafeZones").innerHTML = altHtml;
+
+        // Instructions
+        let instHtml = "";
+        for (const inst of (ep.instructions || [])) {
+            instHtml += `<div class="instruction-item">${inst}</div>`;
+        }
+        document.getElementById("instructions").innerHTML = instHtml;
+
+        // Emergency contacts
+        let contactHtml = "";
+        for (const [name, num] of Object.entries(ep.emergency_contacts || {})) {
+            contactHtml += `<button class="contact-btn" onclick="alert('Call ${name}: ${num}')">
+                📞 ${name}: ${num}</button>`;
+        }
+        document.getElementById("emergencyContacts").innerHTML = contactHtml;
+    } else {
+        document.getElementById("evacuationPanel").style.display = "none";
+    }
+}
+
+// Auto-check on page load
+window.onload = () => checkRisk();
+</script>
+</body>
+</html>
