@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodSense Pro — Simulation Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0a1628; color: white; font-family: Arial, sans-serif; }
+        .navbar { background: #1a0a2e; border-bottom: 2px solid #7b1fa2; }
+        .card-dark { background: #0d2137; border: 1px solid #1565c0; border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+        .card-purple { background: #1a0a2e; border: 2px solid #7b1fa2; border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+        .scenario-btn { border: none; border-radius: 12px; padding: 20px; width: 100%; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; text-align: left; }
+        .scenario-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .btn-normal    { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; }
+        .btn-medium    { background: linear-gradient(135deg, #ffc107, #e0a800); color: #000; }
+        .btn-high      { background: linear-gradient(135deg, #fd7e14, #e8690b); color: white; }
+        .btn-extreme   { background: linear-gradient(135deg, #dc3545, #a71d2a); color: white; animation: none; }
+        .btn-extreme.active { animation: pulse-btn 1s infinite; }
+        .btn-kerala    { background: linear-gradient(135deg, #6f42c1, #4a148c); color: white; }
+        .btn-bengaluru { background: linear-gradient(135deg, #e91e63, #880e4f); color: white; }
+        .btn-dam       { background: linear-gradient(135deg, #b71c1c, #7f0000); color: white; }
+        .btn-sewage    { background: linear-gradient(135deg, #4e342e, #3e2723); color: white; }
+        .btn-chemical  { background: linear-gradient(135deg, #1b5e20, #003300); color: white; }
+        .btn-drain     { background: linear-gradient(135deg, #0d47a1, #001970); color: white; }
+        .btn-encroach  { background: linear-gradient(135deg, #e65100, #bf360c); color: white; }
+        @keyframes pulse-btn { 0%,100%{opacity:1} 50%{opacity:0.8} }
+        .status-indicator { border-radius: 10px; padding: 15px 20px; margin-bottom: 15px; font-weight: 700; }
+        .status-NORMAL  { background: rgba(40,167,69,0.2);  border: 1px solid #28a745; }
+        .status-MEDIUM  { background: rgba(255,193,7,0.2);  border: 1px solid #ffc107; }
+        .status-HIGH    { background: rgba(253,126,20,0.2); border: 1px solid #fd7e14; }
+        .status-EXTREME { background: rgba(220,53,69,0.2);  border: 1px solid #dc3545; }
+        .param-slider { width: 100%; accent-color: #4fc3f7; }
+        .param-value { color: #4fc3f7; font-weight: 700; font-size: 1.1rem; }
+        .live-preview { background: #050e1a; border: 1px solid #1565c0; border-radius: 10px; padding: 15px; }
+        .risk-display { font-size: 2.5rem; font-weight: 900; text-align: center; padding: 20px; border-radius: 12px; }
+        .risk-LOW     { background: rgba(40,167,69,0.3);  color: #28a745; }
+        .risk-MEDIUM  { background: rgba(255,193,7,0.3);  color: #ffc107; }
+        .risk-HIGH    { background: rgba(253,126,20,0.3); color: #fd7e14; }
+        .risk-EXTREME { background: rgba(220,53,69,0.3);  color: #dc3545; }
+        .spinner { border: 3px solid #1565c0; border-top: 3px solid #4fc3f7; border-radius: 50%; width: 25px; height: 25px; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .manmade-panel { background: rgba(220,53,69,0.08); border: 2px solid #ef5350; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .manmade-row { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .manmade-row:last-child { border-bottom: none; }
+        .section-divider { border: none; border-top: 1px solid #7b1fa2; margin: 15px 0; }
+        .type-badge-natural  { background: rgba(79,195,247,0.2); border: 1px solid #4fc3f7; color: #4fc3f7; border-radius: 8px; padding: 2px 10px; font-size: 0.75rem; }
+        .type-badge-manmade  { background: rgba(239,83,80,0.2);  border: 1px solid #ef5350; color: #ef5350; border-radius: 8px; padding: 2px 10px; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav style="background:#1a0a2e; border-bottom:2px solid #7b1fa2; padding:0 20px; position:sticky; top:0; z-index:9999; display:flex; justify-content:space-between; align-items:center;">
+    <a href="/" style="color:#ce93d8; font-size:1.2rem; font-weight:900; text-decoration:none; padding:15px 0;">
+        🌊 FloodSense Pro
+    </a>
+    <ul style="display:flex; list-style:none; margin:0; padding:0; gap:5px;">
+        <li><a href="/"           style="padding:16px 18px; color:#90caf9; text-decoration:none; font-size:0.9rem; font-weight:600;">🏠 Home</a></li>
+        <li><a href="/citizen"    style="padding:16px 18px; color:#90caf9; text-decoration:none; font-size:0.9rem; font-weight:600;">🏘️ Citizen</a></li>
+        <li><a href="/authority"  style="padding:16px 18px; color:#ef9a9a; text-decoration:none; font-size:0.9rem; font-weight:600;">🚨 Authority</a></li>
+        <li><a href="/rescue"     style="padding:16px 18px; color:#80cbc4; text-decoration:none; font-size:0.9rem; font-weight:600;">🏥 Rescue Finder</a></li>
+        <li><a href="/simulation" style="padding:16px 18px; color:#ce93d8; text-decoration:none; font-size:0.9rem; font-weight:600; border-bottom:3px solid #ce93d8;">🎮 Simulation</a></li>
+        <li><a href="/fire-simulation" style="padding:16px 18px; color:#ff8c42; text-decoration:none; font-size:0.9rem; font-weight:600;">🔥 Fire Sim</a></li>
+        <li><a href="/trends"     style="padding:16px 18px; color:#ffcc80; text-decoration:none; font-size:0.9rem; font-weight:600;">📈 Trends</a></li>
+        <li><a href="/map"        style="padding:16px 18px; color:#80cbc4; text-decoration:none; font-size:0.9rem; font-weight:600;" target="_blank">🗺️ Map</a></li>
+    </ul>
+</nav>
+
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="text-center mb-4">
+        <h2 style="color:#ce93d8;">🎮 Demo Simulation Control Panel</h2>
+        <p style="color:#90caf9;">
+            Trigger realistic <span style="color:#4fc3f7;">natural</span> and
+            <span style="color:#ef5350;">manmade</span> disaster scenarios
+            for presentations and demonstrations
+        </p>
+        <div class="status-indicator status-NORMAL d-inline-block" id="currentStatus">
+            ✅ Current Mode: <span id="modeName">NORMAL — Live Data</span>
+            &nbsp;<span id="typeIndicator" class="type-badge-natural">Natural</span>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <!-- ── LEFT COLUMN: Scenarios ── -->
+        <div class="col-md-5">
+            <div class="card-purple">
+                <h5 style="color:#ce93d8;" class="mb-1">⚡ Quick Scenario Presets</h5>
+                <p style="color:#b39ddb; font-size:0.82rem; margin-bottom:15px;">
+                    Click any scenario to instantly apply parameters and run AI prediction
+                </p>
+
+                <!-- Natural Disasters -->
+                <p style="color:#4fc3f7; font-size:0.8rem; font-weight:700; margin-bottom:8px; letter-spacing:1px;">
+                    🌧️ NATURAL DISASTERS
+                </p>
+
+                <button class="scenario-btn btn-normal" onclick="applyScenario('normal')">
+                    ✅ NORMAL DAY<br>
+                    <small style="font-weight:400; opacity:0.85;">Live weather data, typical Bengaluru conditions</small>
+                </button>
+
+                <button class="scenario-btn btn-medium" onclick="applyScenario('medium')">
+                    ⚠️ PRE-MONSOON ALERT<br>
+                    <small style="font-weight:400; opacity:0.85;">Moderate rainfall, elevated risk in low areas</small>
+                </button>
+
+                <button class="scenario-btn btn-high" onclick="applyScenario('high')">
+                    🟠 HEAVY MONSOON<br>
+                    <small style="font-weight:400; opacity:0.85;">85mm rainfall, HIGH risk zones activating</small>
+                </button>
+
+                <button class="scenario-btn btn-extreme" id="btnExtreme" onclick="applyScenario('extreme')">
+                    🔴 EXTREME FLOOD EVENT<br>
+                    <small style="font-weight:400; opacity:0.85;">165mm rainfall — Full emergency protocol</small>
+                </button>
+
+                <button class="scenario-btn btn-kerala" onclick="applyScenario('kerala2018')">
+                    🌊 KERALA 2018 SIMULATION<br>
+                    <small style="font-weight:400; opacity:0.85;">Historical extreme event — 483 deaths, ₹26,000 Cr damage</small>
+                </button>
+
+                <button class="scenario-btn btn-bengaluru" onclick="applyScenario('bengaluru2022')">
+                    🏙️ BENGALURU 2022 SIMULATION<br>
+                    <small style="font-weight:400; opacity:0.85;">Bellandur lake overflow — IT corridor submerged</small>
+                </button>
+
+                <!-- Divider -->
+                <hr class="section-divider">
+
+                <!-- Manmade Disasters -->
+                <p style="color:#ef5350; font-size:0.8rem; font-weight:700; margin-bottom:8px; letter-spacing:1px;">
+                    ⚙️ MANMADE DISASTERS
+                </p>
+                <p style="color:#ffcdd2; font-size:0.76rem; margin-bottom:10px;">
+                    Covers sub-theme: <em>"Early Warning for Natural AND Manmade Disasters"</em>
+                </p>
+
+                <button class="scenario-btn btn-dam" onclick="applyScenario('dam_break')">
+                    🏗️ DAM BREAK — KRS Dam Failure<br>
+                    <small style="font-weight:400; opacity:0.85;">Structural failure, catastrophic Cauvery water surge</small>
+                </button>
+
+                <button class="scenario-btn btn-sewage" onclick="applyScenario('sewage_overflow')">
+                    🏭 SEWAGE OVERFLOW — Bellandur Lake<br>
+                    <small style="font-weight:400; opacity:0.85;">Toxic contamination + flood — water contact hazardous</small>
+                </button>
+
+                <button class="scenario-btn btn-chemical" onclick="applyScenario('industrial_spill')">
+                    ☣️ INDUSTRIAL CHEMICAL SPILL<br>
+                    <small style="font-weight:400; opacity:0.85;">Electronic City plant discharge — air quality hazard</small>
+                </button>
+
+                <button class="scenario-btn btn-drain" onclick="applyScenario('urban_drainage')">
+                    🚧 URBAN DRAIN FAILURE<br>
+                    <small style="font-weight:400; opacity:0.85;">Blocked stormwater drains, civic negligence flooding</small>
+                </button>
+
+                <button class="scenario-btn btn-encroach" onclick="applyScenario('encroachment')">
+                    🏘️ LAKE ENCROACHMENT COLLAPSE<br>
+                    <small style="font-weight:400; opacity:0.85;">Illegal construction on lake bed causes inundation</small>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- ── RIGHT COLUMN ── -->
+        <div class="col-md-7">
+
+            <!-- Custom Sliders -->
+            <div class="card-dark">
+                <h5 style="color:#4fc3f7;" class="mb-3">🎛️ Custom Parameter Control</h5>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label style="color:#90caf9;">🌧️ Rainfall (last 24hrs)</label>
+                        <span class="param-value" id="val_rainfall">5 mm</span>
+                    </div>
+                    <input type="range" class="param-slider" id="sl_rainfall"
+                           min="0" max="250" value="5" oninput="updateSlider()">
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label style="color:#90caf9;">📅 7-Day Cumulative Rainfall</label>
+                        <span class="param-value" id="val_rainfall7d">20 mm</span>
+                    </div>
+                    <input type="range" class="param-slider" id="sl_rainfall7d"
+                           min="0" max="700" value="20" oninput="updateSlider()">
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label style="color:#90caf9;">💧 Humidity</label>
+                        <span class="param-value" id="val_humidity">60%</span>
+                    </div>
+                    <input type="range" class="param-slider" id="sl_humidity"
+                           min="30" max="100" value="60" oninput="updateSlider()">
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label style="color:#90caf9;">💨 Wind Speed</label>
+                        <span class="param-value" id="val_wind">10 km/h</span>
+                    </div>
+                    <input type="range" class="param-slider" id="sl_wind"
+                           min="0" max="120" value="10" oninput="updateSlider()">
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label style="color:#90caf9;">⛰️ Elevation (zone)</label>
+                        <span class="param-value" id="val_elevation">900 m</span>
+                    </div>
+                    <input type="range" class="param-slider" id="sl_elevation"
+                           min="10" max="1500" value="900" oninput="updateSlider()">
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label style="color:#90caf9;">🌊 River Proximity</label>
+                        <span class="param-value" id="val_river">5.0 km</span>
+                    </div>
+                    <input type="range" class="param-slider" id="sl_river"
+                           min="0" max="20" step="0.1" value="5" oninput="updateSlider()">
+                </div>
+
+                <button class="btn btn-outline-info w-100" onclick="runCustomPrediction()">
+                    🔍 Run Custom Prediction
+                </button>
+            </div>
+
+            <!-- Live Prediction Preview -->
+            <div class="card-dark">
+                <h5 style="color:#4fc3f7;" class="mb-3">📊 Live Prediction Preview</h5>
+                <div class="live-preview">
+                    <div class="risk-display risk-LOW" id="riskDisplay">LOW RISK</div>
+                    <div class="row mt-3 text-center">
+                        <div class="col-4">
+                            <div style="color:#90caf9; font-size:0.8rem;">Confidence</div>
+                            <div style="color:#4fc3f7; font-weight:700;" id="confScore">—</div>
+                        </div>
+                        <div class="col-4">
+                            <div style="color:#90caf9; font-size:0.8rem;">Rainfall</div>
+                            <div style="color:#4fc3f7; font-weight:700;" id="previewRainfall">—</div>
+                        </div>
+                        <div class="col-4">
+                            <div style="color:#90caf9; font-size:0.8rem;">Action</div>
+                            <div style="color:#ffc107; font-weight:700; font-size:0.75rem;" id="previewAction">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3" id="simProbBars"></div>
+                <div class="mt-3 text-center">
+                    <a href="/citizen"   class="btn btn-success me-2" target="_blank">View in Citizen →</a>
+                    <a href="/authority" class="btn btn-danger"        target="_blank">View in Authority →</a>
+                </div>
+            </div>
+
+            <!-- ── Manmade Disaster Info Panel ── -->
+            <div id="manmadePanel" style="display:none;" class="manmade-panel">
+                <h5 style="color:#ef5350; margin-bottom:15px;" id="manmadeTitle">
+                    ⚠️ Manmade Disaster Details
+                </h5>
+
+                <div class="manmade-row d-flex">
+                    <span style="color:#90caf9; font-size:0.85rem; min-width:130px;"><b>🔍 Root Cause</b></span>
+                    <span style="color:#ffffff; font-size:0.85rem;" id="manmadeCause"></span>
+                </div>
+                <div class="manmade-row d-flex">
+                    <span style="color:#90caf9; font-size:0.85rem; min-width:130px;"><b>⚡ Trigger</b></span>
+                    <span style="color:#ffffff; font-size:0.85rem;" id="manmadeTrigger"></span>
+                </div>
+                <div class="manmade-row d-flex">
+                    <span style="color:#90caf9; font-size:0.85rem; min-width:130px;"><b>📍 Areas Affected</b></span>
+                    <span style="color:#ffc107; font-size:0.85rem;" id="manmadeAffected"></span>
+                </div>
+                <div class="manmade-row d-flex">
+                    <span style="color:#90caf9; font-size:0.85rem; min-width:130px;"><b>⚠️ Special Risk</b></span>
+                    <span style="color:#ef5350; font-size:0.85rem; font-weight:700;" id="manmadeRisk"></span>
+                </div>
+                <div class="manmade-row d-flex">
+                    <span style="color:#90caf9; font-size:0.85rem; min-width:130px;"><b>✅ Response</b></span>
+                    <span style="color:#a5d6a7; font-size:0.85rem;" id="manmadeResponse"></span>
+                </div>
+
+                <div class="mt-3" style="background:rgba(220,53,69,0.12); border:1px solid #ef5350; border-radius:8px; padding:12px;">
+                    <small style="color:#ffcdd2;">
+                        ⚠️ <b>Manmade disasters differ from natural floods</b> —
+                        contamination risk, sudden onset without weather warning,
+                        and civic infrastructure failure require specialized response
+                        protocols beyond standard flood evacuation procedures.
+                        FloodSense Pro covers both natural and manmade disaster
+                        early warning as per Vision 2035 Theme 11 sub-theme requirements.
+                    </small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const SCENARIOS = {
+    // ── NATURAL ──────────────────────────────────────────────
+    normal: {
+        name: "NORMAL — Live Data", status: "NORMAL", type: "natural",
+        rainfall: 5,   rainfall7d: 20,  humidity: 60, wind: 10,  elevation: 900, river: 5.0
+    },
+    medium: {
+        name: "PRE-MONSOON ALERT",  status: "MEDIUM", type: "natural",
+        rainfall: 35,  rainfall7d: 120, humidity: 78, wind: 25,  elevation: 890, river: 1.5
+    },
+    high: {
+        name: "HEAVY MONSOON",      status: "HIGH",   type: "natural",
+        rainfall: 85,  rainfall7d: 320, humidity: 92, wind: 45,  elevation: 887, river: 0.8
+    },
+    extreme: {
+        name: "EXTREME FLOOD EVENT", status: "EXTREME", type: "natural",
+        rainfall: 165, rainfall7d: 580, humidity: 99, wind: 75,  elevation: 880, river: 0.3
+    },
+    kerala2018: {
+        name: "KERALA 2018 HISTORICAL", status: "EXTREME", type: "natural",
+        rainfall: 220, rainfall7d: 680, humidity: 99, wind: 85,  elevation: 25,  river: 0.2
+    },
+    bengaluru2022: {
+        name: "BENGALURU 2022 — Bellandur", status: "EXTREME", type: "natural",
+        rainfall: 135, rainfall7d: 450, humidity: 97, wind: 55,  elevation: 887, river: 0.5
+    },
+
+    // ── MANMADE ──────────────────────────────────────────────
+    dam_break: {
+        name: "DAM BREAK — KRS Dam Failure", status: "EXTREME", type: "manmade",
+        rainfall: 20, rainfall7d: 80, humidity: 75, wind: 15, elevation: 700, river: 0.1,
+        manmade_info: {
+            cause:        "Structural failure of KRS Dam, Mandya district",
+            trigger:      "Sudden uncontrolled release of 49 TMC stored water",
+            affected:     "Mandya, Mysuru, Ramanagara, Bengaluru South",
+            special_risk: "Water surge 8–12m above normal river level within hours",
+            response:     "Immediate evacuation of all areas within 10km of Cauvery riverbanks"
+        }
+    },
+    sewage_overflow: {
+        name: "SEWAGE OVERFLOW — Bellandur Lake", status: "HIGH", type: "manmade",
+        rainfall: 45, rainfall7d: 160, humidity: 88, wind: 20, elevation: 887, river: 0.5,
+        manmade_info: {
+            cause:        "Bellandur lake overflow due to chronically blocked stormwater drains",
+            trigger:      "Untreated sewage + industrial effluent overload during moderate rainfall",
+            affected:     "Bellandur, Marathahalli, HSR Layout, Sarjapur Road",
+            special_risk: "Toxic contamination — direct water contact is hazardous to health",
+            response:     "Do NOT wade through floodwater. Seal doors. Await BBMP rescue boats."
+        }
+    },
+    industrial_spill: {
+        name: "INDUSTRIAL SPILL — Chemical Contamination", status: "HIGH", type: "manmade",
+        rainfall: 30, rainfall7d: 100, humidity: 72, wind: 35, elevation: 895, river: 1.2,
+        manmade_info: {
+            cause:        "Chemical manufacturing plant discharge into stormwater drainage network",
+            trigger:      "Heavy rainfall overwhelms effluent treatment plant capacity",
+            affected:     "Electronic City Phase 1 & 2, Whitefield EPIP industrial zones",
+            special_risk: "Airborne chemical hazard — respiratory protection required immediately",
+            response:     "Evacuate 2km radius downwind. Do not use local water supply or wells."
+        }
+    },
+    urban_drainage: {
+        name: "URBAN DRAIN FAILURE — Civic Negligence", status: "MEDIUM", type: "manmade",
+        rainfall: 55, rainfall7d: 180, humidity: 85, wind: 25, elevation: 890, river: 0.9,
+        manmade_info: {
+            cause:        "Stormwater drains blocked by encroachment, solid waste, and construction debris",
+            trigger:      "Moderate monsoon rainfall overwhelming choked 40-year-old drain network",
+            affected:     "Koramangala, BTM Layout, Indiranagar underpasses, Silk Board junction",
+            special_risk: "Rapid flash flooding in low-lying roads and underpasses within minutes",
+            response:     "Avoid underpasses, subways, and low-lying roads. Use NH-44 elevated sections."
+        }
+    },
+    encroachment: {
+        name: "LAKE ENCROACHMENT COLLAPSE", status: "HIGH", type: "manmade",
+        rainfall: 70, rainfall7d: 250, humidity: 91, wind: 30, elevation: 885, river: 0.4,
+        manmade_info: {
+            cause:        "Decades of illegal construction on lake beds reduces water retention capacity by 60%",
+            trigger:      "Monsoon rainfall volume exceeds drastically reduced lake holding capacity",
+            affected:     "Varthur lake catchment, Bellandur, Hoodi, residential societies on lake beds",
+            special_risk: "Sudden inundation of housing societies built directly on former lake beds",
+            response:     "Mandatory evacuation of all lake-adjacent and lake-bed housing societies."
+        }
+    }
+};
+
+function applyScenario(key) {
+    const s = SCENARIOS[key];
+
+    // Update sliders
+    document.getElementById("sl_rainfall").value   = s.rainfall;
+    document.getElementById("sl_rainfall7d").value = s.rainfall7d;
+    document.getElementById("sl_humidity").value   = s.humidity;
+    document.getElementById("sl_wind").value        = s.wind;
+    document.getElementById("sl_elevation").value  = s.elevation;
+    document.getElementById("sl_river").value       = s.river;
+
+    updateSlider();
+    runCustomPrediction();
+
+    // Update status badge
+    const statusEl = document.getElementById("currentStatus");
+    statusEl.className = `status-indicator status-${s.status} d-inline-block`;
+    document.getElementById("modeName").textContent = s.name;
+
+    // Update type badge
+    const typeBadge = document.getElementById("typeIndicator");
+    if (s.type === "manmade") {
+        typeBadge.className   = "type-badge-manmade";
+        typeBadge.textContent = "⚙️ Manmade";
+    } else {
+        typeBadge.className   = "type-badge-natural";
+        typeBadge.textContent = "🌧️ Natural";
+    }
+
+    // Show/hide manmade panel
+    if (s.type === "manmade" && s.manmade_info) {
+        showManmadePanel(s.manmade_info, s.name);
+    } else {
+        document.getElementById("manmadePanel").style.display = "none";
+    }
+
+    // Pulse extreme button
+    const isExtreme = ["extreme","kerala2018","bengaluru2022","dam_break"].includes(key);
+    document.getElementById("btnExtreme").classList.toggle("active", isExtreme);
+}
+
+function showManmadePanel(info, title) {
+    document.getElementById("manmadePanel").style.display     = "block";
+    document.getElementById("manmadeTitle").textContent       = "⚠️ " + title;
+    document.getElementById("manmadeCause").textContent       = info.cause;
+    document.getElementById("manmadeTrigger").textContent     = info.trigger;
+    document.getElementById("manmadeAffected").textContent    = info.affected;
+    document.getElementById("manmadeRisk").textContent        = info.special_risk;
+    document.getElementById("manmadeResponse").textContent    = info.response;
+
+    // Scroll to panel
+    document.getElementById("manmadePanel").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function updateSlider() {
+    document.getElementById("val_rainfall").textContent   = document.getElementById("sl_rainfall").value   + " mm";
+    document.getElementById("val_rainfall7d").textContent = document.getElementById("sl_rainfall7d").value + " mm";
+    document.getElementById("val_humidity").textContent   = document.getElementById("sl_humidity").value   + "%";
+    document.getElementById("val_wind").textContent       = document.getElementById("sl_wind").value       + " km/h";
+    document.getElementById("val_elevation").textContent  = document.getElementById("sl_elevation").value  + " m";
+    document.getElementById("val_river").textContent      = parseFloat(document.getElementById("sl_river").value).toFixed(1) + " km";
+}
+
+async function runCustomPrediction() {
+    const params = new URLSearchParams({
+        rainfall_24h:        document.getElementById("sl_rainfall").value,
+        rainfall_7d:         document.getElementById("sl_rainfall7d").value,
+        humidity:            document.getElementById("sl_humidity").value,
+        wind_speed:          document.getElementById("sl_wind").value,
+        elevation:           document.getElementById("sl_elevation").value,
+        river_proximity:     document.getElementById("sl_river").value,
+        temperature:         28,
+        flood_history_freq:  0.7,
+        soil_saturation_idx: Math.min(1.0, document.getElementById("sl_rainfall7d").value / 500),
+        population_density:  35000
+    });
+
+    try {
+        const res  = await fetch(`/api/simulate?${params}`);
+        const data = await res.json();
+        renderSimPreview(data);
+    } catch(err) { console.error(err); }
+}
+
+function renderSimPreview(data) {
+    const p = data.prediction;
+    const colors = { LOW:"#28a745", MEDIUM:"#ffc107", HIGH:"#fd7e14", EXTREME:"#dc3545" };
+
+    const display = document.getElementById("riskDisplay");
+    display.textContent = p.risk_label + " RISK";
+    display.className   = `risk-display risk-${p.risk_label}`;
+
+    document.getElementById("confScore").textContent       = p.risk_score + "%";
+    document.getElementById("previewRainfall").textContent = document.getElementById("sl_rainfall").value + " mm";
+    document.getElementById("previewAction").textContent   = p.action.substring(0, 35) + "...";
+
+    let html = "";
+    for (const [label, pct] of Object.entries(p.probabilities)) {
+        html += `
+        <div class="d-flex align-items-center mb-1">
+            <span style="width:75px; color:#ccc; font-size:0.8rem;">${label}</span>
+            <div style="flex:1; background:#1a2d45; border-radius:3px; height:16px;">
+                <div style="width:${pct}%; background:${colors[label]};
+                     height:100%; border-radius:3px; transition:width 0.4s;"></div>
+            </div>
+            <span style="width:45px; text-align:right; color:#90caf9; font-size:0.8rem;">${pct}%</span>
+        </div>`;
+    }
+    document.getElementById("simProbBars").innerHTML = html;
+}
+
+window.onload = () => { updateSlider(); runCustomPrediction(); };
+</script>
+</body>
+</html>
